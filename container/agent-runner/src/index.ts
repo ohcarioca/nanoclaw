@@ -165,7 +165,7 @@ function getSessionSummary(sessionId: string, transcriptPath: string): string | 
  * Archive the full transcript to conversations/ before compaction.
  */
 function createPreCompactHook(assistantName?: string): HookCallback {
-  return async (input, _toolUseId, _context) => {
+  return async (input: unknown, _toolUseId: unknown, _context: unknown) => {
     const preCompact = input as PreCompactHookInput;
     const transcriptPath = preCompact.transcript_path;
     const sessionId = preCompact.session_id;
@@ -446,7 +446,8 @@ async function runQuery(
         'TeamCreate', 'TeamDelete', 'SendMessage',
         'TodoWrite', 'ToolSearch', 'Skill',
         'NotebookEdit',
-        'mcp__nanoclaw__*'
+        'mcp__nanoclaw__*',
+        'mcp__linear__*',
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
@@ -462,6 +463,13 @@ async function runQuery(
             NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
           },
         },
+        ...(process.env.LINEAR_API_KEY && {
+          linear: {
+            type: 'sse' as const,
+            url: 'https://mcp.linear.app/sse',
+            headers: { Authorization: `Bearer ${process.env.LINEAR_API_KEY}` },
+          },
+        }),
       },
       hooks: {
         PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],

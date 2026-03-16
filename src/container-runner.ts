@@ -239,6 +239,11 @@ function buildContainerArgs(
     args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
   }
 
+  // Pass Linear API key so the agent can connect to the Linear MCP server
+  if (process.env.LINEAR_API_KEY) {
+    args.push('-e', `LINEAR_API_KEY=${process.env.LINEAR_API_KEY}`);
+  }
+
   // Runtime-specific args for host gateway resolution
   args.push(...hostGatewayArgs());
 
