@@ -26,8 +26,11 @@ import {
   stopContainer,
 } from './container-runtime.js';
 import { detectAuthMode } from './credential-proxy.js';
+import { readEnvFile } from './env.js';
 import { validateAdditionalMounts } from './mount-security.js';
 import { RegisteredGroup } from './types.js';
+
+const { LINEAR_API_KEY } = readEnvFile(['LINEAR_API_KEY']);
 
 // Sentinel markers for robust output parsing (must match agent-runner)
 const OUTPUT_START_MARKER = '---NANOCLAW_OUTPUT_START---';
@@ -191,8 +194,10 @@ function buildVolumeMounts(
     group.folder,
     'agent-runner-src',
   );
-  if (!fs.existsSync(groupAgentRunnerDir) && fs.existsSync(agentRunnerSrc)) {
-    fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true });
+  // Always sync source files so updates reach existing groups.
+  // Extra files added by the group are preserved; only source files are overwritten.
+  if (fs.existsSync(agentRunnerSrc)) {
+    fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true, force: true });
   }
   mounts.push({
     hostPath: groupAgentRunnerDir,
@@ -240,8 +245,8 @@ function buildContainerArgs(
   }
 
   // Pass Linear API key so the agent can connect to the Linear MCP server
-  if (process.env.LINEAR_API_KEY) {
-    args.push('-e', `LINEAR_API_KEY=${process.env.LINEAR_API_KEY}`);
+  if (LINEAR_API_KEY) {
+    args.push('-e', `LINEAR_API_KEY=${LINEAR_API_KEY}`);
   }
 
   // Runtime-specific args for host gateway resolution
