@@ -197,7 +197,10 @@ function buildVolumeMounts(
   // Always sync source files so updates reach existing groups.
   // Extra files added by the group are preserved; only source files are overwritten.
   if (fs.existsSync(agentRunnerSrc)) {
-    fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, { recursive: true, force: true });
+    fs.cpSync(agentRunnerSrc, groupAgentRunnerDir, {
+      recursive: true,
+      force: true,
+    });
   }
   mounts.push({
     hostPath: groupAgentRunnerDir,
