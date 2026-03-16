@@ -45,11 +45,13 @@ server.tool(
   {
     text: z.string().describe('The message text to send'),
     sender: z.string().optional().describe('Your role/identity name (e.g. "Researcher"). When set, messages appear from a dedicated bot in Telegram.'),
+    target_jid: z.string().optional().describe('(Main group only) Send to a different WhatsApp number or group. Format: "5511999999999@s.whatsapp.net" for individual numbers, or group JID like "120363...@g.us".'),
   },
   async (args) => {
+    const targetChatJid = (isMain && args.target_jid) ? args.target_jid : chatJid;
     const data: Record<string, string | undefined> = {
       type: 'message',
-      chatJid,
+      chatJid: targetChatJid,
       text: args.text,
       sender: args.sender || undefined,
       groupFolder,
@@ -199,7 +201,6 @@ server.tool(
       type: 'pause_task',
       taskId: args.task_id,
       groupFolder,
-      isMain,
       timestamp: new Date().toISOString(),
     };
 
@@ -218,7 +219,6 @@ server.tool(
       type: 'resume_task',
       taskId: args.task_id,
       groupFolder,
-      isMain,
       timestamp: new Date().toISOString(),
     };
 
@@ -237,7 +237,6 @@ server.tool(
       type: 'cancel_task',
       taskId: args.task_id,
       groupFolder,
-      isMain,
       timestamp: new Date().toISOString(),
     };
 
@@ -258,16 +257,14 @@ server.tool(
   },
   async (args) => {
     // Validate schedule_value if provided
-    if (args.schedule_type === 'cron' || (!args.schedule_type && args.schedule_value)) {
-      if (args.schedule_value) {
-        try {
-          CronExpressionParser.parse(args.schedule_value);
-        } catch {
-          return {
-            content: [{ type: 'text' as const, text: `Invalid cron: "${args.schedule_value}".` }],
-            isError: true,
-          };
-        }
+    if (args.schedule_type === 'cron' && args.schedule_value) {
+      try {
+        CronExpressionParser.parse(args.schedule_value);
+      } catch {
+        return {
+          content: [{ type: 'text' as const, text: `Invalid cron: "${args.schedule_value}".` }],
+          isError: true,
+        };
       }
     }
     if (args.schedule_type === 'interval' && args.schedule_value) {
